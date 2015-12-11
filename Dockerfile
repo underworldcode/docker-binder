@@ -43,7 +43,7 @@ RUN apt-get update -qq && \
 
 
 # script for xvfb-run.  all docker commands will effectively run under this via the entrypoint
-RUN printf "rm -f /tmp/.X99-lock && xvfb-run -s '-screen 0 1600x1200x16' \$@" >> /usr/local/bin/xvfbrun.sh && \
+RUN printf "#\041/bin/sh \n rm -f /tmp/.X99-lock && xvfb-run -s '-screen 0 1600x1200x16' \$@" >> /usr/local/bin/xvfbrun.sh && \
     chmod +x /usr/local/bin/xvfbrun.sh
 
 # set working directory to /root
@@ -73,10 +73,7 @@ RUN git clone https://github.com/underworldcode/underworld2 && \
     rm -fr PICellerator          && \
     rm -fr Solvers
 
-# note we also use xvfb which is required for viz
-ENTRYPOINT ["xvfbrun.sh"]
-
 USER main
 
-
-
+# note we also use xvfb which is required for viz
+ENTRYPOINT ["xvfbrun.sh"]
