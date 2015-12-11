@@ -46,11 +46,11 @@ RUN apt-get update -qq && \
 RUN printf "#\041/bin/sh \n rm -f /tmp/.X99-lock && xvfb-run -s '-screen 0 1600x1200x16' \$@" >> /usr/local/bin/xvfbrun.sh && \
     chmod +x /usr/local/bin/xvfbrun.sh
 
-# set working directory to /root
-WORKDIR /root
-
 # setup environment
-ENV PYTHONPATH $PYTHONPATH:/root/underworld2
+ENV PYTHONPATH $PYTHONPATH:$HOME/underworld2
+
+USER main
+WORKDIR $HOME
 
 # get underworld, compile, delete some unnecessary files, run tests.
 RUN git clone https://github.com/underworldcode/underworld2 && \
@@ -72,8 +72,6 @@ RUN git clone https://github.com/underworldcode/underworld2 && \
     rm -fr StgDomain             && \
     rm -fr PICellerator          && \
     rm -fr Solvers
-
-USER main
 
 # note we also use xvfb which is required for viz
 ENTRYPOINT ["xvfbrun.sh"]
