@@ -1,77 +1,43 @@
-FROM andrewosh/binder-base
-MAINTAINER mansourjohn@gmail.com
+# The existing docker image should be deployable on binder - we just need
+# to copy the content across to the $HOME directory ... see
+# https://mybinder.readthedocs.io/en/latest/dockerfile.html#when-should-you-use-a-dockerfile
+# for details
+
+# SHA tagging of the publication version
+FROM underworldcode/underworld2@sha256:9eb117b9332b039887ef2e2f428dc08cfb8a36af9c2f78acaa8ef1d65a1f7864
+
+ENV NB_USER jovyan
+ENV NB_UID 1000
+ENV HOME /home/${NB_USER}
+
+# tidy up
 
 USER root
 
-# install things
-RUN apt-get update -qq && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
-        bash-completion \
-        build-essential \
-        git \
-        python \
-        python-dev \
-        petsc-dev \
-        libhdf5-dev \
-        python-pip \
-        libxml2-dev \
-        xorg-dev \
-        ssh \
-        curl \
-        libfreetype6-dev \
-        libpng12-dev \
-        libxft-dev \
-        xvfb \
-        freeglut3 \
-        freeglut3-dev \
-        libgl1-mesa-dri \
-        libgl1-mesa-glx \
-        rsync \
-        vim \
-        less \
-        xauth \
-        swig && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*  && \
-    pip install \
-        numpy \
-        jupyter \
-        plotly \
-        mpi4py \
-        matplotlib \
-        runipy
+## A requirement of binder (but can it be dropped ?)
+RUN pip install --no-cache-dir --upgrade notebook==5.*
+
+RUN mkdir /home/jovyan/.scratch || true
+RUN mv /workspace/publications /home/jovyan/publications
+RUN mv /workspace/user_guide /home/jovyan/user_guide
+RUN mv /workspace/tutorials /home/jovyan/tutorials
+RUN mv /workspace /home/jovyan/.scratch || true
+
+## This is not used by binder at present (but for testing, it is helpful to have
+## the notebook launched by default (but we hide this file !)
+
+RUN echo "1"
+ADD run-jupyter.sh .run-jupyter.sh
+
+## Set config options ??
+RUN rm -rf .jupyter || true
+RUN mkdir  .jupyter
+ADD jupyter_notebook_config.py .jupyter/jupyter_notebook_config.py
 
 
-# script for xvfb-run.  all docker commands will effectively run under this via the entrypoint
-RUN printf "#\041/bin/sh \n rm -f /tmp/.X99-lock && xvfb-run -s '-screen 0 1600x1200x16' \$@" >> /usr/local/bin/xvfbrun.sh && \
-    chmod +x /usr/local/bin/xvfbrun.sh
+RUN chown -R ${NB_UID} ${HOME}
 
-# setup environment
-ENV PYTHONPATH $PYTHONPATH:$HOME/underworld2
+USER ${NB_USER}
 
-USER main
-WORKDIR $HOME
-
-# get underworld, compile, delete some unnecessary files, run tests.
-RUN git clone https://github.com/underworldcode/underworld2 && \
-    cd underworld2/libUnderworld && \
-    ./configure.py --hdf5-dir=/usr/lib/x86_64-linux-gnu/hdf5/serial/            && \
-    ./scons.py                   && \
-    cd libUnderworldPy           && \
-    ./swigall.py                 && \
-    cd ..                        && \
-    ./scons.py                   && \
-    rm .sconsign.dblite          && \
-    rm -fr .sconf_temp           && \
-    cd build                     && \
-    rm -fr libUnderworldPy       && \
-    rm -fr StGermain             && \
-    rm -fr gLucifer              && \
-    rm -fr Underworld            && \
-    rm -fr StgFEM                && \
-    rm -fr StgDomain             && \
-    rm -fr PICellerator          && \
-    rm -fr Solvers
-
-# note we also use xvfb which is required for viz
-ENTRYPOINT ["xvfbrun.sh"]
+ENTRYPOINT ["/usr/local/bin/tini", "--"]
+CMD ./.run-jupyter.sh
