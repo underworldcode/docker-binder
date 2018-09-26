@@ -18,17 +18,17 @@ WORKDIR /home/jovyan
 ## A requirement of binder (but can it be dropped ?)
 RUN pip install --no-cache-dir --upgrade notebook==5.*
 
-RUN mkdir /home/jovyan/.scratch || true
 RUN mv /workspace/publications /home/jovyan/publications
 RUN mv /workspace/user_guide /home/jovyan/user_guide
 RUN mv /workspace/tutorials /home/jovyan/tutorials
-RUN mv /workspace /home/jovyan/.scratch || true
+## RUN mv /workspace /home/jovyan/.scratch || true
 
 ## This is not used by binder at present (but for testing, it is helpful to have
 ## the notebook launched by default (but we hide this file !)
 
 RUN echo "1"
-ADD run-jupyter.sh .run-jupyter.sh
+ADD run-jupyter.sh /home/jovyan/.run-jupyter.sh
+ADD Index.ipynb /home/jovyan/Index.ipynb
 
 ## Set config options ??
 RUN rm -rf .jupyter || true
@@ -41,4 +41,4 @@ RUN chown -R ${NB_UID} ${HOME}
 USER ${NB_USER}
 
 ENTRYPOINT ["/usr/local/bin/tini", "--"]
-CMD ./.run-jupyter.sh
+CMD /home/jovyan/.run-jupyter.sh
