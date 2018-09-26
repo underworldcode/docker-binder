@@ -13,6 +13,7 @@ ENV HOME /home/${NB_USER}
 # tidy up
 
 USER root
+WORKDIR /home/jovyan
 
 ## A requirement of binder (but can it be dropped ?)
 RUN pip install --no-cache-dir --upgrade notebook==5.*
